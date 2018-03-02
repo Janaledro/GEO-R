@@ -14,12 +14,46 @@ GEO<-read.csv(file="data/GEO_tablet.tsv", header = T, sep = "\t",
 #Este bloque se tiene que comentar cuando se obtengan los datos completos
 GEO<-droplevels(GEO[1:200,])
 
+#####################################################################
+#Este bloque es sólo para hacer pruebas con el data frame original, aquí se trabajará con la columna
+#"ORGANISMO" de tal manera en que se pueda ejecutar posteriormente el código para gráficar 
+
+
+SPPs <- as.character(GEO.DF$ORGANISMO)
+SPPstr<-unlist(strsplit(SPPs, split = ","))
+ESPECIES<-grep("!Sample_", SPPstr, value = T, invert = T)
+ESPECIES.DF<- data.frame(ESPECIES, stringsAsFactors = T)
+ESPECIES.DF<-droplevels(ESPECIES.DF)
+
+my.summary<-summary.data.frame(ESPECIES.DF, maxsum = 7)
+ESPECIES.DF<-data.frame(ORGANISMO=, NUMERO_DE_ENTRADAS_EN_LA_TABLA=my.summary)
+ESPECIES.DF<-data.frame(
+  ORGANISMO=c("Homo_sapiens", "Mus_musculus", "Arabidopsis_thaliana",
+              "Drosophila_melanogaster", "Rattus_novergicus", "Saccharomyces_cerevisiae", 
+              "Other"),
+  NUMERO_DE_ENTRADAS_EN_LA_TABLA=c(21905, 14898, 1876, 1792, 1506, 1289, 12609),
+  stringsAsFactors = T)
+
+bp<- ggplot(ESPECIES.DF, aes(x="", y=NUMERO_DE_ENTRADAS_EN_LA_TABLA, fill= ORGANISMO))+
+  geom_bar(width = 1, stat = "identity") 
+bp + scale_fill_brewer(palette="Dark2")
+
+pie <- bp + coord_polar("y", start=0)
+pie + scale_fill_brewer(palette="Dark2")
+
+pdf("results/piechart_especies_tabla_original.pdf")
+pie
+bp
+dev.off()
+
+####
+#EL SIGUIENTE BLOQUE SE ENCARGARÁ DE ARREGLAR LAS LÍNEAS DESFASADAS DE LA TABLA FINAL.
+
+GEO.DF<-GEO[grepl(GEO$FECHA_DE_PUBLICACION, pattern = "Public_on_"),]
 
 #####################################################################
 #A continuación se desconcatenan y simplifican los datos de ORGANISMO que tienen el formato:
 #"ORGANISMO,!Sample_"
-
-
 
 FINAL_DF <- GEO[0, ]
 INTERMEDIATE_DF <- GEO[0, ]
@@ -38,11 +72,10 @@ for(i in 1:nrow(GEO)){
   FINAL_DF<-rbind(FINAL_DF, INTERMEDIATE_DF)
 }
 
-rm(INTERMEDIATE_DF)
+ rm(INTERMEDIATE_DF)
 GEO.DF<-FINAL_DF
 
 GEO.DF$ORGANISMO<-droplevels(GEO.DF$ORGANISMO)
-
 
 #####################################################################
 #A continuación se generará un data frame con las 6 especies más abundantes de la tabla
@@ -50,7 +83,7 @@ GEO.DF$ORGANISMO<-droplevels(GEO.DF$ORGANISMO)
 
 #NUMEROS_POR_ESPECIE.DF<-summary(GEO$ORGANISMO, maxsum = 7)
 
-my.summary <- summary(GEO.DF$ORGANISMO, maxsum = 7)
+my.summary <- summary(GEO$ORGANISMO, maxsum = 7)
 NUMEROS_POR_ESPECIE.DF<-data.frame(ORGANISMO=names(my.summary), NUMERO_DE_ENTRADAS_EN_LA_TABLA=my.summary)
 
 ####
@@ -58,7 +91,7 @@ NUMEROS_POR_ESPECIE.DF<-data.frame(ORGANISMO=names(my.summary), NUMERO_DE_ENTRAD
 # Barplot
 bp<- ggplot(NUMEROS_POR_ESPECIE.DF, aes(x="", y=NUMERO_DE_ENTRADAS_EN_LA_TABLA,
                                         fill= ORGANISMO))+
-  geom_bar(width = 0.3, stat = "identity")
+  geom_bar(width = 1, stat = "identity")
 bp
 
 pie <- bp + coord_polar("y", start=0)
@@ -70,7 +103,7 @@ bp
 dev.off()
 
 ####
-#A continuación se realizarán gráfficos de comparación a lo largo del tiempo
+#A continuación se realizarán gráficos de comparación a lo largo del tiempo
 GEO.DF$ANO <-0
 GEO.DF$MES <-0
 GEO.DF$DIA <-0
@@ -139,4 +172,3 @@ for (i in 1:nrow(DATOS_POR_ANO.DF)){
 
 ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=TOTAL_DE_CARACTERES)) + 
   geom_point()
-
