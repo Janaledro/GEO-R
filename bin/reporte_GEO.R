@@ -155,7 +155,7 @@ DATOS_POR_ANO.DF <- data.frame(ANO=factor(anos),
 
 GEO.DF$RESUMEN_DEL_PROYECTO<-as.character(GEO.DF$RESUMEN_DEL_PROYECTO)
 for (i in 1:nrow(DATOS_POR_ANO.DF)){
-  DATOS_POR_ANO.DF$ANO[i] <-  anos[i]
+  DATOS_POR_ANO.DF$ANO[i] <- anos[i]
   DATOS_POR_ANO.DF$CON_RESUMEN[i] <-sum(!is.na(GEO.DF[GEO.DF$ANO == anos[i],"RESUMEN_DEL_PROYECTO"]))
   DATOS_POR_ANO.DF$SIN_RESUMEN[i]<-sum(is.na(GEO.DF[GEO.DF$ANO == anos[i],"RESUMEN_DEL_PROYECTO"]))
   DATOS_POR_ANO.DF$TOTAL_DE_CARACTERES[i]<- nchar(paste(GEO.DF[GEO.DF$ANO == anos[i],"RESUMEN_DEL_PROYECTO"], collapse = "")) / DATOS_POR_ANO.DF$CON_RESUMEN[i]
@@ -172,3 +172,19 @@ for (i in 1:nrow(DATOS_POR_ANO.DF)){
 
 ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=TOTAL_DE_CARACTERES)) + 
   geom_point()
+
+ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=ARRAY)) + 
+  geom_point()
+
+ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=SEQ)) + 
+  geom_point()
+
+ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_HUMANO)) + 
+  geom_point()
+
+ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_RATON)) + 
+  geom_point()
+
+bp<- ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=c(NUMERO_DE_ESTUDIOS_EN_RATON, NUMERO_DE_ESTUDIOS_EN_HUMANO)))+
+  geom_bar(width = 1, stat = "identity") 
+bp + scale_fill_brewer(palette="Dark2")
