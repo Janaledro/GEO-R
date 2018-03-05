@@ -6,7 +6,8 @@
 #A continuación se cargará la librería 'ggplot' para hacer gráficos
 library("ggplot2")
 library("reshape2")
-
+library("alluvial")
+library("dplyr")
 #A continuación se leerán los datos
 GEO<-read.csv(file="data/GEO_tablet.tsv", header = T, sep = "\t", 
               na.strings = "", stringsAsFactors = T) 
@@ -14,6 +15,11 @@ GEO<-read.csv(file="data/GEO_tablet.tsv", header = T, sep = "\t",
 #Aquí se hará con 200 líneas para facilitar las pruebas 
 #Este bloque se tiene que comentar cuando se obtengan los datos completos
 #GEO<-droplevels(GEO[1:200,])
+
+####
+#EL SIGUIENTE BLOQUE SE ENCARGARÁ DE ARREGLAR LAS LÍNEAS DESFASADAS DE LA TABLA FINAL.
+
+GEO.DF<-GEO[grepl(GEO$FECHA_DE_PUBLICACION, pattern = "Public_on_"),]
 
 #####################################################################
 #Este bloque es sólo para hacer pruebas con el data frame original, aquí se trabajará con la columna
@@ -45,12 +51,8 @@ pie + scale_fill_brewer(palette="Dark2")
 pdf("results/piechart_especies_tabla_original.pdf")
 pie
 bp
+
 dev.off()
-
-####
-#EL SIGUIENTE BLOQUE SE ENCARGARÁ DE ARREGLAR LAS LÍNEAS DESFASADAS DE LA TABLA FINAL.
-
-GEO.DF<-GEO[grepl(GEO$FECHA_DE_PUBLICACION, pattern = "Public_on_"),]
 
 #####################################################################
 #A continuación se desconcatenan y simplifican los datos de ORGANISMO que tienen el formato:
@@ -101,6 +103,13 @@ pie
 pdf("results/piechart_especies_tabla_original.pdf")
 pie
 bp
+gp
+gp_hs_vs_anos
+gp_hs_vs_mm
+gp_microarreglos_vs_años
+gp_mm_vs_anos
+gp_seq_vs_anos
+gp_tdc
 dev.off()
 
 ####
@@ -112,6 +121,7 @@ GEO.DF$DIA <-0
 
 GEO.DF$FECHA_DE_PUBLICACION <- as.character(GEO.DF$FECHA_DE_PUBLICACION)
 for(i in 1:nrow(GEO.DF)){
+message(paste0("Operando sobre la línea ", i))
 GEO.DF$ANO[i] <- unlist(strsplit(GEO.DF$FECHA_DE_PUBLICACION[i], split = "_"))[5]
 GEO.DF$MES[i] <- unlist(strsplit(GEO.DF$FECHA_DE_PUBLICACION[i], split = "_"))[4]
 GEO.DF$DIA[i] <- unlist(strsplit(GEO.DF$FECHA_DE_PUBLICACION[i], split = "_"))[3]
@@ -132,7 +142,7 @@ GEO.DF$DIA <-as.factor(GEO.DF$DIA)
 
 fechas<- summary(GEO.DF$ANO)
 NUMEROS_POR_ANO <- data.frame(ANO=names(fechas), NUMERO_DE_ENTRADAS = fechas)
-ggplot(NUMEROS_POR_ANO, aes(x=ANO, y=NUMERO_DE_ENTRADAS)) + 
+gp_numero_de_entradas<-ggplot(NUMEROS_POR_ANO, aes(x=ANO, y=NUMERO_DE_ENTRADAS)) + 
   geom_point()
 
 ####
@@ -156,6 +166,7 @@ DATOS_POR_ANO.DF <- data.frame(ANO=factor(anos),
 
 GEO.DF$RESUMEN_DEL_PROYECTO<-as.character(GEO.DF$RESUMEN_DEL_PROYECTO)
 for (i in 1:nrow(DATOS_POR_ANO.DF)){
+  message(paste0("Creando el data frame en la línea ", i))
   DATOS_POR_ANO.DF$ANO[i] <- anos[i]
   DATOS_POR_ANO.DF$CON_RESUMEN[i] <-sum(!is.na(GEO.DF[GEO.DF$ANO == anos[i],"RESUMEN_DEL_PROYECTO"]))
   DATOS_POR_ANO.DF$SIN_RESUMEN[i]<-sum(is.na(GEO.DF[GEO.DF$ANO == anos[i],"RESUMEN_DEL_PROYECTO"]))
@@ -171,22 +182,22 @@ for (i in 1:nrow(DATOS_POR_ANO.DF)){
 #A CONTINUACIÓN LA GRÁFICA DE PUNTOS PARA COMPARAR EL NÚMERO PROMEDIO DE CARACTERES 
 #EN UN RESUMEN CONTRA EL AÑO EN QUE SE PUBLICÓ
 
-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=TOTAL_DE_CARACTERES)) + 
+gp_tdc<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=TOTAL_DE_CARACTERES)) + 
   geom_point()
 
 #GRÁFICA DE ESTUDIOS CON MICROARREGOS VS AÑOS
-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=ARRAY)) + 
+gp_microarreglos_vs_años<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=ARRAY)) + 
   geom_point()
 
 #GRÁFICA DE ESTUDIOS CON SECUENCIACIÓN VS AÑOS
-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=SEQ)) + 
+gp_seq_vs_años<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=SEQ)) + 
   geom_point()
 #GRÁFICA DE ESTUDIOS EN HUMANO VS AÑOS
-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_HUMANO)) + 
+gp_hs_vs_anos<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_HUMANO)) + 
   geom_point()
 
 #GRÁFICA DE ESTUDIOS EN RATÓN VS AÑOS
-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_RATON)) + 
+gp_mm_vs_anos<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_RATON)) + 
   geom_point() + geom_line()
 
 #GRÁFICA DE ESTUDIOS EN HUMANO VS RATÓN A TRAVÉS DEL TIEMPO. PRIMERO HAY QUE ORGANIZAR 
@@ -196,12 +207,38 @@ FRAME.DF<-data.frame(DATOS_POR_ANO.DF$ANO, DATOS_POR_ANO.DF$NUMERO_DE_ESTUDIOS_E
 data.m<-melt(FRAME.DF, id.vars= "ANO")
 
 #GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN HUMANOS VS RATÓN CON BARRAS
-ggplot(data.m, aes(ANO, value))+ 
+bp_hs_vs_mm<-ggplot(data.m, aes(ANO, value))+ 
   geom_bar(aes( fill= variable), position= "dodge", stat="identity") + 
   scale_fill_brewer(palette="Dark2")
 
 #GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN HUMANOS VS RATÓN CON PUNTOS
-ggplot(data.m, aes(x=ANO, y=value)) + 
-  geom_point(aes(fill=variable, color=variable)) + scale_color_brewer(palette="Set1")
+gp_hs_vs_mm<-ggplot(data.m, aes(x=ANO, y=value)) + 
+  geom_point(aes(fill=variable, color=variable)) + 
+  scale_color_brewer(palette="Set1")
   
 #REALIZACIÓN DE ALLUVIAL PLOT PARA SUMARIZAR LA INFORMACIÓN PREVIA
+FRAME.DF<-data.frame(ANO=DATOS_POR_ANO.DF$ANO, 
+                     NUMERO_DE_ESTUDIOS_EN_HUMANO=DATOS_POR_ANO.DF$NUMERO_DE_ESTUDIOS_EN_HUMANO, 
+                     NUMERO_DE_ESTUDIOS_EN_RATON=DATOS_POR_ANO.DF$NUMERO_DE_ESTUDIOS_EN_RATON,
+                     ARRAY=DATOS_POR_ANO.DF$ARRAY,
+                     SEQ=DATOS_POR_ANO.DF$SEQ, stringsAsFactors = T)
+data.m<-melt(FRAME.DF, id.vars= "ANO")
+alluvial1<-alluvial(data.m, freq = data.m$value)
+
+ARRAYvsSEQ.DF<-data.frame(ANO=DATOS_POR_ANO.DF$ANO,
+                        ARRAY=DATOS_POR_ANO.DF$ARRAY,
+                        SEQ=DATOS_POR_ANO.DF$SEQ,
+                        stringsAsFactors = T)
+summary.data.frame(ARRAYvsSEQ.DF)
+arrayvsseq.melt<-melt(ARRAYvsSEQ.DF, id.vars = "ANO")
+arrayvsseq<-subset(arrayvsseq.melt, select = -ANO)
+alluvial2<-alluvial(arrayvsseq, freq = arrayvsseq$value)
+
+#GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN MICROARREGLOS VS SECUENCIACIÓN
+ggplot(arrayvsseq.melt, aes(ANO, value))+ 
+  geom_bar(aes( fill= variable), position= "dodge", stat="identity") + 
+  scale_fill_brewer(palette="Dark2")
+
+#GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN MICROARREGLOS VS SECUENCIACIÓN CON PUNTOS
+ggplot(arrayvsseq.melt, aes(x=ANO, y=value)) + 
+  geom_point(aes(fill=variable, color=variable)) + scale_color_brewer(palette="Set1")
