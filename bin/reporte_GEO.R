@@ -5,6 +5,7 @@
 
 #A continuación se cargará la librería 'ggplot' para hacer gráficos
 library("ggplot2")
+library("reshape2")
 
 #A continuación se leerán los datos
 GEO<-read.csv(file="data/GEO_tablet.tsv", header = T, sep = "\t", 
@@ -12,7 +13,7 @@ GEO<-read.csv(file="data/GEO_tablet.tsv", header = T, sep = "\t",
 #####################################################################
 #Aquí se hará con 200 líneas para facilitar las pruebas 
 #Este bloque se tiene que comentar cuando se obtengan los datos completos
-GEO<-droplevels(GEO[1:200,])
+#GEO<-droplevels(GEO[1:200,])
 
 #####################################################################
 #Este bloque es sólo para hacer pruebas con el data frame original, aquí se trabajará con la columna
@@ -26,7 +27,7 @@ ESPECIES.DF<- data.frame(ESPECIES, stringsAsFactors = T)
 ESPECIES.DF<-droplevels(ESPECIES.DF)
 
 my.summary<-summary.data.frame(ESPECIES.DF, maxsum = 7)
-ESPECIES.DF<-data.frame(ORGANISMO=, NUMERO_DE_ENTRADAS_EN_LA_TABLA=my.summary)
+#ESPECIES.DF<-data.frame(ORGANISMO=, NUMERO_DE_ENTRADAS_EN_LA_TABLA=my.summary)
 ESPECIES.DF<-data.frame(
   ORGANISMO=c("Homo_sapiens", "Mus_musculus", "Arabidopsis_thaliana",
               "Drosophila_melanogaster", "Rattus_novergicus", "Saccharomyces_cerevisiae", 
@@ -173,18 +174,34 @@ for (i in 1:nrow(DATOS_POR_ANO.DF)){
 ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=TOTAL_DE_CARACTERES)) + 
   geom_point()
 
+#GRÁFICA DE ESTUDIOS CON MICROARREGOS VS AÑOS
 ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=ARRAY)) + 
   geom_point()
 
+#GRÁFICA DE ESTUDIOS CON SECUENCIACIÓN VS AÑOS
 ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=SEQ)) + 
   geom_point()
-
+#GRÁFICA DE ESTUDIOS EN HUMANO VS AÑOS
 ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_HUMANO)) + 
   geom_point()
 
+#GRÁFICA DE ESTUDIOS EN RATÓN VS AÑOS
 ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_RATON)) + 
-  geom_point()
+  geom_point() + geom_line()
 
-bp<- ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=c(NUMERO_DE_ESTUDIOS_EN_RATON, NUMERO_DE_ESTUDIOS_EN_HUMANO)))+
-  geom_bar(width = 1, stat = "identity") 
-bp + scale_fill_brewer(palette="Dark2")
+#GRÁFICA DE ESTUDIOS EN HUMANO VS RATÓN A TRAVÉS DEL TIEMPO. PRIMERO HAY QUE ORGANIZAR 
+#LOS DATOS PARA COMPARARLOS EN PARALELO
+FRAME.DF<-data.frame(DATOS_POR_ANO.DF$ANO, DATOS_POR_ANO.DF$NUMERO_DE_ESTUDIOS_EN_HUMANO, 
+                     DATOS_POR_ANO.DF$NUMERO_DE_ESTUDIOS_EN_RATON)
+data.m<-melt(FRAME.DF, id.vars= "ANO")
+
+#GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN HUMANOS VS RATÓN CON BARRAS
+ggplot(data.m, aes(ANO, value))+ 
+  geom_bar(aes( fill= variable), position= "dodge", stat="identity") + 
+  scale_fill_brewer(palette="Dark2")
+
+#GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN HUMANOS VS RATÓN CON PUNTOS
+ggplot(data.m, aes(x=ANO, y=value)) + 
+  geom_point(aes(fill=variable, color=variable)) + scale_color_brewer(palette="Set1")
+  
+#REALIZACIÓN DE ALLUVIAL PLOT PARA SUMARIZAR LA INFORMACIÓN PREVIA
