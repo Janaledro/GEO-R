@@ -100,17 +100,6 @@ bp
 pie <- bp + coord_polar("y", start=0)
 pie
 
-pdf("results/piechart_especies_tabla_original.pdf")
-pie
-bp
-gp
-gp_hs_vs_anos
-gp_hs_vs_mm
-gp_microarreglos_vs_años
-gp_mm_vs_anos
-gp_seq_vs_anos
-gp_tdc
-dev.off()
 
 ####
 #A continuación se realizarán gráficos de comparación a lo largo del tiempo
@@ -190,7 +179,7 @@ gp_microarreglos_vs_años<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=ARRAY)) +
   geom_point()
 
 #GRÁFICA DE ESTUDIOS CON SECUENCIACIÓN VS AÑOS
-gp_seq_vs_años<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=SEQ)) + 
+gp_seq_vs_anos<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=SEQ)) + 
   geom_point()
 #GRÁFICA DE ESTUDIOS EN HUMANO VS AÑOS
 gp_hs_vs_anos<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_HUMANO)) + 
@@ -198,12 +187,14 @@ gp_hs_vs_anos<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_HUMAN
 
 #GRÁFICA DE ESTUDIOS EN RATÓN VS AÑOS
 gp_mm_vs_anos<-ggplot(DATOS_POR_ANO.DF, aes(x=ANO, y=NUMERO_DE_ESTUDIOS_EN_RATON)) + 
-  geom_point() + geom_line()
+  geom_point()
 
 #GRÁFICA DE ESTUDIOS EN HUMANO VS RATÓN A TRAVÉS DEL TIEMPO. PRIMERO HAY QUE ORGANIZAR 
 #LOS DATOS PARA COMPARARLOS EN PARALELO
-FRAME.DF<-data.frame(DATOS_POR_ANO.DF$ANO, DATOS_POR_ANO.DF$NUMERO_DE_ESTUDIOS_EN_HUMANO, 
-                     DATOS_POR_ANO.DF$NUMERO_DE_ESTUDIOS_EN_RATON)
+FRAME.DF<-data.frame(ANO=DATOS_POR_ANO.DF$ANO, 
+                     NUMERO_DE_ESTUDIOS_EN_HUMANO=DATOS_POR_ANO.DF$NUMERO_DE_ESTUDIOS_EN_HUMANO, 
+                     NUMERO_DE_ESTUDIOS_EN_RATON=DATOS_POR_ANO.DF$NUMERO_DE_ESTUDIOS_EN_RATON)
+
 data.m<-melt(FRAME.DF, id.vars= "ANO")
 
 #GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN HUMANOS VS RATÓN CON BARRAS
@@ -244,7 +235,7 @@ ggplot(arrayvsseq.melt, aes(x=ANO, y=value)) +
   geom_point(aes(fill=variable, color=variable)) + scale_color_brewer(palette="Set1")
 
 ###
-#A CONTINUACIÓN E GENERARÁ UN LOOP FOR PARA EXTRAER LOS ÍNDICES DONDE SE ENCUENTRAN
+#A CONTINUACIÓN SE GENERARÁ UN LOOP FOR PARA EXTRAER LOS ÍNDICES DONDE SE ENCUENTRAN
 #MÚLTIPLES TÉRMINOS CON LA HERRAMIENTA "grepl"
 #A CONTINUACIÓN CREAMOS UN DATA FRAME DE PRUEBA
 PARA_PROBAR_GREPS.DF<- GEO.DF[1:100,]
@@ -272,3 +263,25 @@ VECTOR_FINAL_DE_GREPS<-unique(VECTOR_FINAL_DE_GREPS)
 #AHORA VAMOS A EXTRAER LAS FILAS QUE NOS INTERESAN
 GEO_FILTRADO<-PARA_PROBAR_GREPS.DF[VECTOR_FINAL_DE_GREPS,]
 GEO_FILTRADO<-PARA_PROBAR_GREPS.DF[VECTOR_FINAL_DE_GREPS,]
+
+
+
+
+
+####
+#BLOQUE FINAL
+#EN ESTE BLOQUE SE AGRUPAN LAS GRÁFIAS GENERADAS HASTA AHORA PARA EXPORTARLAS EN PDF
+pdf("results/graficas_de_tabla_original.pdf")
+pie
+bp
+gp_hs_vs_anos
+gp_mm_vs_anos
+gp_microarreglos_vs_años
+gp_seq_vs_anos
+gp_tdc
+bp_hs_vs_mm
+gp_hs_vs_mm
+alluvial1<-alluvial(data.m, freq = data.m$value)
+alluvial2<-alluvial(arrayvsseq, freq = arrayvsseq$value)
+dev.off()
+
