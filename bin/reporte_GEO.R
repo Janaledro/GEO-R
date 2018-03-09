@@ -8,7 +8,9 @@ library("ggplot2")
 library("reshape2")
 library("alluvial")
 library("dplyr")
-#A continuación se leerán los datos
+library("wesanderson")
+#A continuación se leerán los datos. Se recuerda ubicar el espacio de trabajo
+#con "setwd()"
 GEO<-read.csv(file="data/GEO_tablet.tsv", header = T, sep = "\t", 
               na.strings = "", stringsAsFactors = T) 
 #####################################################################
@@ -21,6 +23,9 @@ GEO<-read.csv(file="data/GEO_tablet.tsv", header = T, sep = "\t",
 
 GEO.DF<-GEO[grepl(GEO$FECHA_DE_PUBLICACION, pattern = "Public_on_"),]
 
+#EN ESTA LÍNEA SE GENERARÁ UN DATA FRAME CON LAS LÍNEAS FALTANTES
+GEO_DESFASADO.DF<-GEO[grep(GEO$FECHA_DE_PUBLICACION, pattern = "Public_on_", invert = T),]
+
 #####################################################################
 #Este bloque es sólo para hacer pruebas con el data frame original, aquí se trabajará con la columna
 #"ORGANISMO" de tal manera en que se pueda ejecutar posteriormente el código para gráficar 
@@ -32,27 +37,33 @@ ESPECIES<-grep("!Sample_", SPPstr, value = T, invert = T)
 ESPECIES.DF<- data.frame(ESPECIES, stringsAsFactors = T)
 ESPECIES.DF<-droplevels(ESPECIES.DF)
 
-my.summary<-summary.data.frame(ESPECIES.DF, maxsum = 7)
-#ESPECIES.DF<-data.frame(ORGANISMO=, NUMERO_DE_ENTRADAS_EN_LA_TABLA=my.summary)
-ESPECIES.DF<-data.frame(
-  ORGANISMO=c("Homo_sapiens", "Mus_musculus", "Arabidopsis_thaliana",
-              "Drosophila_melanogaster", "Rattus_novergicus", "Saccharomyces_cerevisiae", 
-              "Other"),
-  NUMERO_DE_ENTRADAS_EN_LA_TABLA=c(21905, 14898, 1876, 1792, 1506, 1289, 12609),
-  stringsAsFactors = T)
+my.summary<-summary(ESPECIES.DF, maxsum = 7)
+my.summary<-data.frame(ORGANISMO = c("Homo sapiens", "Mus musculus", "Arabidopsis thaliana",
+                                     "Drosophila melanogaster", "Rattus novergicus",
+                                     "Saccharomyces cerevisiae","Otros"),
+                       NUMERO_DE_ENTRADAS_EN_LA_TABLA = c(21905, 14898, 1876, 1792, 
+                                                          1506,1289,12609),
+                       stringsAsFactors = F)
+#my.summary2<-as.data.frame(do.call(rbind,strsplit(as.character(my.summary),
+#                                               split = ":")), stringsAsFactors = T)
+#my.summary2<-as.data.frame(my.summary2)
 
-bp<- ggplot(ESPECIES.DF, aes(x="", y=NUMERO_DE_ENTRADAS_EN_LA_TABLA, fill= ORGANISMO))+
-  geom_bar(width = 1, stat = "identity") 
-bp + scale_fill_brewer(palette="Dark2")
+#colnames(my.summary2) <- c("ORGANISMO","NUMERO_DE_ENTRADAS_EN_LA_TABLA")
 
-pie <- bp + coord_polar("y", start=0)
-pie + scale_fill_brewer(palette="Dark2")
-
-pdf("results/piechart_especies_tabla_original.pdf")
-pie
+#A CONTINUACIÓN, EL PIECHART
+bp<- ggplot(my.summary, aes(x="", y=NUMERO_DE_ENTRADAS_EN_LA_TABLA, fill= ORGANISMO))+
+  geom_bar(width = 1, stat = "identity") + 
+    scale_fill_brewer(palette = "Dark2")
 bp
 
-dev.off()
+  pie <- bp + coord_polar("y", start=0)
+pie
+
+#pdf("results/piechart_especies_tabla_original.pdf")
+#pie
+#bp
+
+#dev.off()
 
 #####################################################################
 #A continuación se desconcatenan y simplifican los datos de ORGANISMO que tienen el formato:
@@ -90,18 +101,6 @@ my.summary <- summary(GEO$ORGANISMO, maxsum = 7)
 NUMEROS_POR_ESPECIE.DF<-data.frame(ORGANISMO=names(my.summary), NUMERO_DE_ENTRADAS_EN_LA_TABLA=my.summary)
 
 ####
-#A continuación, el piechart
-# Barplot
-bp<- ggplot(NUMEROS_POR_ESPECIE.DF, aes(x="", y=NUMERO_DE_ENTRADAS_EN_LA_TABLA,
-                                        fill= ORGANISMO))+
-  geom_bar(width = 1, stat = "identity")
-bp
-
-pie <- bp + coord_polar("y", start=0)
-pie
-
-
-####
 #A continuación se realizarán gráficos de comparación a lo largo del tiempo
 GEO.DF$ANO <-0
 GEO.DF$MES <-0
@@ -117,6 +116,12 @@ GEO.DF$DIA[i] <- unlist(strsplit(GEO.DF$FECHA_DE_PUBLICACION[i], split = "_"))[3
 }
 #GEO.DF$MES
 #GEO.DF$DIA
+
+#DESBLOQUEAR ESTE BLOQUE EN CASO DE TENER YA LA TABLA RESULTADO DEL LOOP. ESTO ES
+#ÚTIL PARA EVITAR REPETIR EL LOOP CON LA TABLA ORIGINAL
+#write.csv("GEO.DF", "data/GEO_DF.tsv")
+#read.csv("data/GEO_DF.tsv", header = T, sep = "\t", stringsAsFactors = T, 
+#         na.strings = "")
 
 GEO.DF$ANO <-as.factor(GEO.DF$ANO)
 GEO.DF$MES <-as.factor(GEO.DF$MES)
@@ -238,9 +243,12 @@ ggplot(arrayvsseq.melt, aes(x=ANO, y=value)) +
 #A CONTINUACIÓN SE GENERARÁ UN LOOP FOR PARA EXTRAER LOS ÍNDICES DONDE SE ENCUENTRAN
 #MÚLTIPLES TÉRMINOS CON LA HERRAMIENTA "grepl"
 #A CONTINUACIÓN CREAMOS UN DATA FRAME DE PRUEBA
-PARA_PROBAR_GREPS.DF<- GEO.DF[1:100,]
+#PARA_PROBAR_GREPS.DF<- GEO.DF[1:100,]
 #A CONTINUACIÓN CREAMOS EL VACTOR CON LOS TÉRMINOS DE BÚSQUEDA
-palabras<-c("models", "memory","DNA")
+palabras<-c("_addiction_", "_alcoholism_", "_OCD_", "_brain_", "_coccaine_",
+            "_drug_abuse_", "_alcohol_", "_reward_","_substance_related_disorders_",
+            "_neuroscience_", "_dopamine_", "_glutamate_", "_reward_mechanisms_",
+            "_alcohol_dependence_", "_marijuana_")
 ####
 #CREANDO UN VACTOR VACÍO DONDE SE CONCATENARÁN TODOS LOS VECTORES DE CADA PALABRA
 VECTOR_FINAL_DE_GREPS<-NA
@@ -248,7 +256,7 @@ VECTOR_FINAL_DE_GREPS<-NA
 #ITERATIVA
 for(i in 1:length(palabras)){
   message(paste0("Estoy buscando la palabra ", palabras[i]))
-  indices<-grep(pattern = palabras[i], PARA_PROBAR_GREPS.DF$RESUMEN_DEL_PROYECTO, 
+  indices<-grep(pattern = palabras[i], GEO.DF$RESUMEN_DEL_PROYECTO, 
         ignore.case = T)
   #aquí se tiene que concatenar el vector "indices" con el vector final de greps
   VECTOR_FINAL_DE_GREPS<-as.vector(rbind(VECTOR_FINAL_DE_GREPS, indices))
