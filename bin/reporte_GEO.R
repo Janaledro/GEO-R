@@ -8,7 +8,7 @@ library("ggplot2")
 library("reshape2")
 library("alluvial")
 library("dplyr")
-library("wesanderson")
+
 #A continuación se leerán los datos. Se recuerda ubicar el espacio de trabajo
 #con "setwd()"
 GEO<-read.csv(file="data/GEO_tablet.tsv", header = T, sep = "\t", 
@@ -119,9 +119,9 @@ GEO.DF$DIA[i] <- unlist(strsplit(GEO.DF$FECHA_DE_PUBLICACION[i], split = "_"))[3
 
 #DESBLOQUEAR ESTE BLOQUE EN CASO DE TENER YA LA TABLA RESULTADO DEL LOOP. ESTO ES
 #ÚTIL PARA EVITAR REPETIR EL LOOP CON LA TABLA ORIGINAL
-#write.csv("GEO.DF", "data/GEO_DF.tsv")
-#read.csv("data/GEO_DF.tsv", header = T, sep = "\t", stringsAsFactors = T, 
-#         na.strings = "")
+#write.table(x=GEO.DF, file = "data/GEO_DF.tsv", sep = "\t", na = "")
+#GEO.DF<-read.csv("data/GEO_DF.tsv", header = T, sep = "\t", stringsAsFactors = T, 
+ #        na.strings = "")
 
 GEO.DF$ANO <-as.factor(GEO.DF$ANO)
 GEO.DF$MES <-as.factor(GEO.DF$MES)
@@ -141,7 +141,7 @@ gp_numero_de_entradas<-ggplot(NUMEROS_POR_ANO, aes(x=ANO, y=NUMERO_DE_ENTRADAS))
 
 ####
 #A CONTINUACIÓN GRAFICARMOS EL NÚMERO DE PROYECTOS CON DESCRIPCIÓN RESPECTO AL AÑO
-#PRIMERO CREAREMOS UN VECTOR CON TODOS LOS AÑOS POSIBLES 
+#PRIMERO CREAREMOS UN VECTOR CON TODOS LOS AÑOS REGISTRADOS EN GEO
 anos <- levels(GEO.DF$ANO)
 #A CONTINUACIÓN SE CREA UN DATA FRAME VACÍO CON EL FORMATO:
 #ANO   NUMERO DE ESTUDIOS CON RESUMEN   NUMERO DE ESTUDIOS SIN RESUMEN  TOTAL DE CARACTERES EN LOS RESUMENES  
@@ -205,7 +205,7 @@ data.m<-melt(FRAME.DF, id.vars= "ANO")
 #GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN HUMANOS VS RATÓN CON BARRAS
 bp_hs_vs_mm<-ggplot(data.m, aes(ANO, value))+ 
   geom_bar(aes( fill= variable), position= "dodge", stat="identity") + 
-  scale_fill_brewer(palette="Dark2")
+  scale_fill_brewer(palette="Set1")
 
 #GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN HUMANOS VS RATÓN CON PUNTOS
 gp_hs_vs_mm<-ggplot(data.m, aes(x=ANO, y=value)) + 
@@ -233,11 +233,11 @@ alluvial2<-alluvial(arrayvsseq, freq = arrayvsseq$value)
 #GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN MICROARREGLOS VS SECUENCIACIÓN
 ggplot(arrayvsseq.melt, aes(ANO, value))+ 
   geom_bar(aes( fill= variable), position= "dodge", stat="identity") + 
-  scale_fill_brewer(palette="Dark2")
+  scale_fill_brewer(palette="Paired")
 
 #GRÁFICA QUE COMPARA ESTUDIOS REALIZADOS EN MICROARREGLOS VS SECUENCIACIÓN CON PUNTOS
 ggplot(arrayvsseq.melt, aes(x=ANO, y=value)) + 
-  geom_point(aes(fill=variable, color=variable)) + scale_color_brewer(palette="Set1")
+  geom_point(aes(fill=variable, color=variable)) + scale_color_brewer(palette="Paired")
 
 ###
 #A CONTINUACIÓN SE GENERARÁ UN LOOP FOR PARA EXTRAER LOS ÍNDICES DONDE SE ENCUENTRAN
@@ -245,9 +245,10 @@ ggplot(arrayvsseq.melt, aes(x=ANO, y=value)) +
 #A CONTINUACIÓN CREAMOS UN DATA FRAME DE PRUEBA
 #PARA_PROBAR_GREPS.DF<- GEO.DF[1:100,]
 #A CONTINUACIÓN CREAMOS EL VACTOR CON LOS TÉRMINOS DE BÚSQUEDA
-palabras<-c("_addiction_", "_alcoholism_", "_OCD_", "_brain_", "_coccaine_",
+
+palabras<-c("_addiction_", "_alcoholism_", "_OCD_", "_coccaine_",
             "_drug_abuse_", "_alcohol_", "_reward_","_substance_related_disorders_",
-            "_neuroscience_", "_dopamine_", "_glutamate_", "_reward_mechanisms_",
+             "_dopamine_", "_reward_mechanisms_",
             "_alcohol_dependence_", "_marijuana_")
 ####
 #CREANDO UN VACTOR VACÍO DONDE SE CONCATENARÁN TODOS LOS VECTORES DE CADA PALABRA
@@ -258,6 +259,8 @@ for(i in 1:length(palabras)){
   message(paste0("Estoy buscando la palabra ", palabras[i]))
   indices<-grep(pattern = palabras[i], GEO.DF$RESUMEN_DEL_PROYECTO, 
         ignore.case = T)
+  indices<-grep(pattern = "cancer", GEO.DF$RESUMEN_DEL_PROYECTO,
+                ignore.case = T, invert = T)
   #aquí se tiene que concatenar el vector "indices" con el vector final de greps
   VECTOR_FINAL_DE_GREPS<-as.vector(rbind(VECTOR_FINAL_DE_GREPS, indices))
   #c( matrix(c(VECTOR_FINAL_DE_GREPS,indices), nrow=2, byrow=TRUE) ) 
@@ -269,10 +272,12 @@ VECTOR_FINAL_DE_GREPS <- VECTOR_FINAL_DE_GREPS[!is.na(VECTOR_FINAL_DE_GREPS)]
 VECTOR_FINAL_DE_GREPS<-unique(VECTOR_FINAL_DE_GREPS)
 
 #AHORA VAMOS A EXTRAER LAS FILAS QUE NOS INTERESAN
-GEO_FILTRADO<-PARA_PROBAR_GREPS.DF[VECTOR_FINAL_DE_GREPS,]
+GEO_FILTRADO<-GEO.DF[VECTOR_FINAL_DE_GREPS,]
 GEO_FILTRADO<-PARA_PROBAR_GREPS.DF[VECTOR_FINAL_DE_GREPS,]
 
-
+#A CONTINUACIÓN SE REMOVERÁN TODOS LOS DATOS RELACIONADOS CON CÁNCER
+GEO_FILTRADO.DF<-GEO_FILTRADO[grep("_cancer_", GEO_FILTRADO$RESUMEN_DEL_PROYECTO, 
+                                   invert = T),]
 
 
 
