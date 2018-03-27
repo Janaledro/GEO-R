@@ -246,21 +246,23 @@ ggplot(arrayvsseq.melt, aes(x=ANO, y=value)) +
 #PARA_PROBAR_GREPS.DF<- GEO.DF[1:100,]
 #A CONTINUACIÓN CREAMOS EL VACTOR CON LOS TÉRMINOS DE BÚSQUEDA
 
-palabras<-c("_addiction_", "_alcoholism_", "_OCD_", "_coccaine_",
+palabras_tas<-c("_addiction_", "_alcoholism_", "_coccaine_",
             "_drug_abuse_", "_alcohol_", "_reward_","_substance_related_disorders_",
              "_dopamine_", "_reward_mechanisms_",
             "_alcohol_dependence_", "_marijuana_")
+
+palabras_toc<-c("_obsessive-compulsive_disorder", "_OCD_")
 ####
 #CREANDO UN VACTOR VACÍO DONDE SE CONCATENARÁN TODOS LOS VECTORES DE CADA PALABRA
 VECTOR_FINAL_DE_GREPS<-NA
 #A CONTINUACIÓN CREAMOS EL LOOP FOR PARA BUSCAR UN VECTOR DE MATCHES DE MANERA
 #ITERATIVA
-for(i in 1:length(palabras)){
-  message(paste0("Estoy buscando la palabra ", palabras[i]))
-  indices<-grep(pattern = palabras[i], GEO.DF$RESUMEN_DEL_PROYECTO, 
+for(i in 1:length(palabras_tas)){
+  message(paste0("Estoy buscando la palabra ", palabras_tas[i]))
+  indices<-grep(pattern = palabras_tas[i], GEO.DF$RESUMEN_DEL_PROYECTO, 
         ignore.case = T)
-  indices<-grep(pattern = "cancer", GEO.DF$RESUMEN_DEL_PROYECTO,
-                ignore.case = T, invert = T)
+  #indices<-grep(pattern = "cancer", GEO.DF$RESUMEN_DEL_PROYECTO,
+   #             ignore.case = T, invert = T)
   #aquí se tiene que concatenar el vector "indices" con el vector final de greps
   VECTOR_FINAL_DE_GREPS<-as.vector(rbind(VECTOR_FINAL_DE_GREPS, indices))
   #c( matrix(c(VECTOR_FINAL_DE_GREPS,indices), nrow=2, byrow=TRUE) ) 
@@ -273,13 +275,23 @@ VECTOR_FINAL_DE_GREPS<-unique(VECTOR_FINAL_DE_GREPS)
 
 #AHORA VAMOS A EXTRAER LAS FILAS QUE NOS INTERESAN
 GEO_FILTRADO<-GEO.DF[VECTOR_FINAL_DE_GREPS,]
-GEO_FILTRADO<-PARA_PROBAR_GREPS.DF[VECTOR_FINAL_DE_GREPS,]
+#GEO_FILTRADO<-PARA_PROBAR_GREPS.DF[VECTOR_FINAL_DE_GREPS,]
 
 #A CONTINUACIÓN SE REMOVERÁN TODOS LOS DATOS RELACIONADOS CON CÁNCER
-GEO_FILTRADO.DF<-GEO_FILTRADO[grep("_cancer_", GEO_FILTRADO$RESUMEN_DEL_PROYECTO, 
+GEO_FILTRADO.DF<-GEO_FILTRADO[grep("_cancer_", GEO_FILTRADO$RESUMEN_DEL_PROYECTO,
+                                   invert = T),]
+GEO_FILTRADO.DF<-GEO_FILTRADO.DF[grep("_myeloma_", GEO_FILTRADO.DF$RESUMEN_DEL_PROYECTO,
                                    invert = T),]
 
+#FILTRO PARA HOMO SAPIENS Y RATÓN
+TAS_HS.DF<-GEO_FILTRADO.DF[grep("Homo_sapiens", GEO_FILTRADO.DF$ORGANISMO), ]
+TAS_MM.DF<-TAS_HS_MM.DF[grep("Mus_musculus", TAS_HS_MM.DF$ORGANISMO), ]
+TAS_HS_MM.DF<-rbind(TAS_HS.DF, TAS_MM.DF)
+TAS_HS_MM.DF<-unique(TAS_HS_MM.DF)
 
+##FINALMENTE, SE ESCRIBE UNA TABLA EN .CSV CON LOS RESULTADOS DE GREP
+write.csv(GEO_FILTRADO.DF, "results/ESTUDIOS_PARA_TAS.csv")
+write.csv(TAS_HS_MM.DF, "results/TAS_EN_HH_Y_MM.csv")
 
 ####
 #BLOQUE FINAL
